@@ -1,0 +1,315 @@
+{
+  "packageUrl" : "http:\/\/172.16.10.64\/6513download\/fish-lua-update\/m1\/",
+  "assets" : {
+    "backpack.zip" : {
+      "len" : 178183,
+      "compressed" : true,
+      "content" : {
+        "src\/backpack\/backpackpb\/LoginServerPackageResp.pb" : {
+          "len" : 506
+        },
+        "src\/backpack\/backpackpb\/LoginServerPackageReloadReq.pb" : {
+          "len" : 134
+        },
+        "src\/backpack\/beibao\/bbxt.plist" : {
+          "len" : 12321
+        },
+        "src\/backpack\/BackpackLayer.lua" : {
+          "len" : 14133
+        },
+        "src\/backpack\/BackpackListLayer.lua" : {
+          "len" : 27628
+        },
+        "src\/backpack\/backpackpb\/LoginServerPackageReloadResp.pb" : {
+          "len" : 528
+        },
+        "src\/backpack\/beibao\/bbxt.png" : {
+          "len" : 171835
+        },
+        "src\/backpack\/backpackpb\/LoginServerPackageReq.pb" : {
+          "len" : 160
+        },
+        "src\/backpack\/BackpackMenu.lua" : {
+          "len" : 4761
+        }
+      }
+    },
+    "everyday_register.zip" : {
+      "len" : 236030,
+      "compressed" : true,
+      "content" : {
+        "src\/everyday_register\/res\/everyday_rigister.csb" : {
+          "len" : 11440
+        },
+        "src\/everyday_register\/res\/number_1.fnt" : {
+          "len" : 1401
+        },
+        "src\/everyday_register\/res\/lottery.png" : {
+          "len" : 3421
+        },
+        "src\/everyday_register\/res\/btn1_queding_02.png" : {
+          "len" : 4116
+        },
+        "src\/everyday_register\/res\/qdtx.plist" : {
+          "len" : 3878
+        },
+        "src\/everyday_register\/res\/RE_back_Image.png" : {
+          "len" : 26560
+        },
+        "src\/everyday_register\/res\/Gold_Down.plist" : {
+          "len" : 7243
+        },
+        "src\/everyday_register\/every_day_register.lua" : {
+          "len" : 16428
+        },
+        "src\/everyday_register\/pb\/QianDaoProto.pb" : {
+          "len" : 463
+        },
+        "src\/everyday_register\/res\/btn1_queding_01.png" : {
+          "len" : 4024
+        },
+        "src\/everyday_register\/res\/RE_click_VIP_s.png" : {
+          "len" : 2042
+        },
+        "src\/everyday_register\/res\/number_1.png" : {
+          "len" : 7844
+        },
+        "src\/everyday_register\/res\/RE_times.png" : {
+          "len" : 3903
+        },
+        "src\/everyday_register\/res\/RE_under_back.png" : {
+          "len" : 726
+        },
+        "src\/everyday_register\/res\/tishi_1.png" : {
+          "len" : 21635
+        },
+        "src\/everyday_register\/res\/MainScene.csb" : {
+          "len" : 744
+        },
+        "src\/everyday_register\/res\/everyday_register.plist" : {
+          "len" : 13464
+        },
+        "src\/everyday_register\/res\/Gold_Up.plist" : {
+          "len" : 7251
+        },
+        "src\/everyday_register\/res\/everyday_register.png" : {
+          "len" : 141383
+        }
+      }
+    },
+    "ranklist.zip" : {
+      "len" : 591863,
+      "compressed" : true,
+      "content" : {
+        "src\/ranklist\/PublicData.lua" : {
+          "len" : 1260
+        },
+        "src\/ranklist\/paihangbang\/phbxt.plist" : {
+          "len" : 33017
+        },
+        "src\/ranklist\/ranklistpb\/LoginServerRankResp.pb" : {
+          "len" : 471
+        },
+        "src\/ranklist\/ranklistpb\/QianDaoProto.pb" : {
+          "len" : 463
+        },
+        "src\/ranklist\/ranklistpb\/LoginServerRankReq.pb" : {
+          "len" : 149
+        },
+        "src\/ranklist\/paihangbang\/phbxt.png" : {
+          "len" : 592193
+        },
+        "src\/ranklist\/RankListMenu.lua" : {
+          "len" : 4279
+        },
+        "src\/ranklist\/RankList.lua" : {
+          "len" : 20392
+        },
+        "src\/ranklist\/RankListLayer.lua" : {
+          "len" : 22134
+        },
+        "src\/ranklist\/RankListItemLayer.lua" : {
+          "len" : 17906
+        }
+      }
+    },
+    "usercenter.zip" : {
+      "len" : 669359,
+      "compressed" : true,
+      "content" : {
+        "src\/usercenter\/usercenterpb\/LoginServerPlayInfoResp.proto" : {
+          "len" : 215
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerAccountsBindResp.pb" : {
+          "len" : 289
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerAccountsDebindReq.pb" : {
+          "len" : 154
+        },
+        "src\/usercenter\/res\/photosetfile\/shoujihaonum.png" : {
+          "len" : 12977
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerAccountsDebindResp.pb" : {
+          "len" : 156
+        },
+        "src\/usercenter\/res\/photosetfile\/usercenterpls.png" : {
+          "len" : 500951
+        },
+        "src\/usercenter\/UserCenterLayer.lua" : {
+          "len" : 35868
+        },
+        "src\/usercenter\/usercenterpb\/UpdateUserCommonInfoReq.pb" : {
+          "len" : 270
+        },
+        "src\/usercenter\/usercenterpb\/UpdateUserCommonInfoResp.pb" : {
+          "len" : 404
+        },
+        "src\/usercenter\/usercenterpb\/UpdateUserCommonInfoResp.proto" : {
+          "len" : 1042
+        },
+        "src\/usercenter\/res\/BangDinginfoLayer.csb" : {
+          "len" : 12420
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerPlayInfoReq.pb" : {
+          "len" : 113
+        },
+        "src\/usercenter\/res\/photosetfile\/shoujihaonum.fnt" : {
+          "len" : 1305
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerAccountsDebindResp.proto" : {
+          "len" : 211
+        },
+        "src\/usercenter\/res\/photosetfile\/bangdingshoujipls.png" : {
+          "len" : 127981
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerPlayInfoReq.proto" : {
+          "len" : 143
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerAccountsDebindReq.proto" : {
+          "len" : 202
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerPlayInfoResp.pb" : {
+          "len" : 152
+        },
+        "src\/usercenter\/usercenterpb\/UpdateUserCommonInfoReq.proto" : {
+          "len" : 634
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerAccountsBindResp.proto" : {
+          "len" : 406
+        },
+        "src\/usercenter\/res\/photosetfile\/bangdingshoujipls.plist" : {
+          "len" : 10793
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerAccountsBindReq.pb" : {
+          "len" : 196
+        },
+        "src\/usercenter\/res\/bangdingshurukuang.png" : {
+          "len" : 1438
+        },
+        "src\/usercenter\/res\/JieBangLayer.csb" : {
+          "len" : 3188
+        },
+        "src\/usercenter\/res\/photosetfile\/usercenterpls.plist" : {
+          "len" : 19284
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerFetchVerifyCodeReq.pb" : {
+          "len" : 172
+        },
+        "src\/usercenter\/res\/Usercenter.csb" : {
+          "len" : 20980
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerFetchVerifyCodeReq.proto" : {
+          "len" : 245
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerAccountsBindReq.proto" : {
+          "len" : 325
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerFetchVerifyCodeResp.pb" : {
+          "len" : 296
+        },
+        "src\/usercenter\/usercenterpb\/LoginServerFetchVerifyCodeResp.proto" : {
+          "len" : 319
+        }
+      }
+    },
+    "OnlineReward.zip" : {
+      "len" : 284611,
+      "compressed" : true,
+      "content" : {
+        "src\/OnlineReward\/Online_Reward.lua" : {
+          "len" : 8535
+        },
+        "src\/OnlineReward\/res\/btn1_queding_02.png" : {
+          "len" : 4116
+        },
+        "src\/OnlineReward\/pb\/GameServerReceiveOnLineRewrdResp.pb" : {
+          "len" : 207
+        },
+        "src\/OnlineReward\/res\/tishi_1.png" : {
+          "len" : 21635
+        },
+        "src\/OnlineReward\/res\/wlq02.fnt" : {
+          "len" : 1394
+        },
+        "src\/OnlineReward\/res\/commonclose.png" : {
+          "len" : 11133
+        },
+        "src\/OnlineReward\/res\/btn1_queding_01.png" : {
+          "len" : 4024
+        },
+        "src\/OnlineReward\/res\/OnlineReward.csb" : {
+          "len" : 3868
+        },
+        "src\/OnlineReward\/res\/wlq02.png" : {
+          "len" : 9969
+        },
+        "src\/OnlineReward\/res\/OnLineReward.plist" : {
+          "len" : 6870
+        },
+        "src\/OnlineReward\/pb\/GameServerOnlieRewardResp.pb" : {
+          "len" : 435
+        },
+        "src\/OnlineReward\/OnlineReward_logol.lua" : {
+          "len" : 3954
+        },
+        "src\/OnlineReward\/res\/commonclose2.png" : {
+          "len" : 10777
+        },
+        "src\/OnlineReward\/MessageBox.lua" : {
+          "len" : 1717
+        },
+        "src\/OnlineReward\/res\/OnLineReward.png" : {
+          "len" : 218016
+        },
+        "src\/OnlineReward\/pb\/GameServerReceiveOnLineRewrdReq.pb" : {
+          "len" : 164
+        }
+      }
+    },
+    "net.zip" : {
+      "len" : 5146,
+      "compressed" : true,
+      "content" : {
+        "src\/net\/NetWaittingTipsManager.lua" : {
+          "len" : 2234
+        },
+        "src\/net\/NetManager.lua" : {
+          "len" : 1458
+        },
+        "src\/net\/CommandEventHandler.lua" : {
+          "len" : 1348
+        },
+        "src\/net\/CommandHandler.lua" : {
+          "len" : 3292
+        },
+        "src\/net\/EventProtocol.lua" : {
+          "len" : 2386
+        },
+        "src\/net\/ClientCommand.lua" : {
+          "len" : 816
+        }
+      }
+    }
+  },
+  "remoteManifestUrl" : "http:\/\/172.16.10.64\/6513download\/fish-lua-update\/m1\/project.manifest"
+}
