@@ -851,6 +851,8 @@ void ModuleMgr::exportZipedSrc(const std::string &zip, const std::string &desPat
         
         unzCloseCurrentFile(zipfile);
         
+        ModuleManifest::setFileTime(fullPath, ModuleManifest::dosDateToTime(fileInfo.dosDate));
+        
         // Goto next entry listed in the zip file.
         if ((i+1) < global_info.number_entry)
         {
@@ -886,6 +888,8 @@ void ModuleMgr::exportZipedSrc(const std::string &zip, const std::string &desPat
         fwrite(ver_content.c_str(), ver_content.length(), 1, out);
         fclose(out);
     }
+    
+    
     
     return;
 }

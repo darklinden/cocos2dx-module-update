@@ -9,9 +9,11 @@
 #import <Foundation/Foundation.h>
 #import <CommonCrypto/CommonDigest.h>
 
+#include <time.h>
+#include <utime.h>
+#include <sys/stat.h>
+
 static __strong NSString* _srcFolderPath = nil;
-static __strong NSMutableDictionary *_srcManifestDict = nil;
-static __strong NSString* _srcManifestPath = nil;
 
 static __strong NSString* _desFolderPath = nil;
 static __strong NSMutableDictionary *_desManifestDict = nil;
@@ -24,31 +26,6 @@ static __strong NSString* _param_key = @"cmd-param";
 
 static void readManifest()
 {
-    // read src
-    if (_srcFolderPath) {
-        _srcManifestPath = [_srcFolderPath stringByAppendingPathComponent:_manifest_name];
-    }
-    
-    if (_srcManifestPath.length) {
-        if ([[NSFileManager defaultManager] fileExistsAtPath:_srcManifestPath]) {
-            
-            NSString* content = [NSString
-                                 stringWithContentsOfFile:_srcManifestPath
-                                 encoding:NSUTF8StringEncoding
-                                 error:nil];
-            
-            NSDictionary* jdict = [NSJSONSerialization
-                                   JSONObjectWithData:[content dataUsingEncoding:NSUTF8StringEncoding]
-                                   options:0
-                                   error:nil];
-            
-            _srcManifestDict = [NSMutableDictionary dictionaryWithDictionary:jdict];
-        }
-        else {
-            _srcManifestDict = [NSMutableDictionary dictionary];
-        }
-    }
-    
     // read des
     if (_desFolderPath) {
         _desManifestPath = [_desFolderPath stringByAppendingPathComponent:_manifest_name];
@@ -62,12 +39,14 @@ static void readManifest()
                                  encoding:NSUTF8StringEncoding
                                  error:nil];
             
-            NSDictionary* jdict = [NSJSONSerialization
-                                   JSONObjectWithData:[content dataUsingEncoding:NSUTF8StringEncoding]
-                                   options:0
-                                   error:nil];
-            
-            _desManifestDict = [NSMutableDictionary dictionaryWithDictionary:jdict];
+            if (content.length) {
+                NSDictionary* jdict = [NSJSONSerialization
+                                       JSONObjectWithData:[content dataUsingEncoding:NSUTF8StringEncoding]
+                                       options:0
+                                       error:nil];
+                
+                _desManifestDict = [NSMutableDictionary dictionaryWithDictionary:jdict];
+            }
         }
         
         else {
@@ -77,22 +56,6 @@ static void readManifest()
 }
 
 static void saveManifest() {
-    if (_srcManifestDict.count) {
-        NSError *error;
-        NSData *jsonData = [NSJSONSerialization
-                            dataWithJSONObject:_srcManifestDict
-                            options:NSJSONWritingPrettyPrinted
-                            error:&error];
-        if (!jsonData) {
-            NSLog(@"manifest save json failed %@", error);
-        }
-        else {
-            if (![jsonData writeToFile:_srcManifestPath atomically:YES]) {
-                NSLog(@"manifest save json failed");
-            }
-        }
-    }
-    
     if (_desManifestDict.count) {
         NSError *error;
         NSData *jsonData = [NSJSONSerialization
@@ -159,6 +122,23 @@ static long long fileGitTime(NSString* filepath)
     return ret;
 }
 
+static void setFileTime(NSString* filePath, long long timestamp) {
+    struct stat attr;
+    
+    stat(filePath.UTF8String, &attr);
+    
+    struct utimbuf new_times;
+    new_times.actime = attr.st_atime; /* keep atime unchanged */
+    new_times.modtime = timestamp;    /* set mtime to current time */
+    utime(filePath.UTF8String, &new_times);
+    
+    NSMutableDictionary* mattr = [NSMutableDictionary dictionaryWithDictionary:
+                                  [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:nil]];
+    
+    [mattr setObject:[NSDate dateWithTimeIntervalSince1970:timestamp]
+              forKey:NSFileCreationDate];
+}
+
 static void luaCompile()
 {
     // cocos luacompile -s src -d src -e -k '' -b BYE --disable-compile
@@ -176,16 +156,38 @@ static void luaCompile()
     NSString* cmd = [COCOS_CONSOLE_ROOT stringByAppendingPathComponent:@"cocos"];
     
     cmd = [[[[cmd stringByAppendingString:@" luacompile -s "]
-                       stringByAppendingString:_srcFolderPath]
-                        stringByAppendingString:@" -d "]
-                      stringByAppendingString:_srcFolderPath];
-
+             stringByAppendingString:_srcFolderPath]
+            stringByAppendingString:@" -d "]
+           stringByAppendingString:_srcFolderPath];
+    
     if (param.length) {
         cmd = [[cmd stringByAppendingString:@" "] stringByAppendingString:param];
     }
     
     NSLog(@"execute: %@", cmd);
     system(cmd.UTF8String);
+}
+
+static NSString* pwd()
+{
+    // nothing to commit, working directory clean
+    NSPipe *pipe = [NSPipe pipe];
+    NSFileHandle *file = pipe.fileHandleForReading;
+    
+    NSTask *task = [[NSTask alloc] init];
+    
+    task.launchPath = @"/bin/pwd";
+    task.arguments = @[];
+    task.standardOutput = pipe;
+    
+    [task launch];
+    
+    NSData *data = [file readDataToEndOfFile];
+    [file closeFile];
+    
+    NSString *grepOutput = [[NSString alloc] initWithData:data
+                                                 encoding:NSUTF8StringEncoding];
+    return [grepOutput stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 }
 
 static NSString* checkGit()
@@ -211,13 +213,17 @@ static NSString* checkGit()
     return grepOutput;
 }
 
-static NSMutableDictionary* getModules(NSString* folder)
-{
+static void mkSrcAssets() {
+    
     NSFileManager *fmgr = [NSFileManager defaultManager];
     NSError *err = nil;
-    NSArray *subfiles = [fmgr subpathsOfDirectoryAtPath:folder error:&err];
     
-    NSMutableDictionary* dict = [NSMutableDictionary dictionary];
+    NSString* folder = _srcFolderPath;
+    NSArray* subfiles = [fmgr subpathsOfDirectoryAtPath:folder error:&err];
+    
+    NSString* upFolder = [_srcFolderPath stringByDeletingLastPathComponent];
+    
+    NSString* desPath = [[_desFolderPath stringByAppendingPathComponent:_srcFolderPath.lastPathComponent] stringByAppendingPathExtension:@"zip"];
     
     for (NSString* name in subfiles) {
         
@@ -237,143 +243,30 @@ static NSMutableDictionary* getModules(NSString* folder)
             continue;
         }
         
+        NSString* full = [folder stringByAppendingPathComponent:name];
+        
         BOOL isDirectory = false;
-        BOOL exist = [fmgr fileExistsAtPath:[folder stringByAppendingPathComponent:name]
+        BOOL exist = [fmgr fileExistsAtPath:full
                                 isDirectory:&isDirectory];
         if (isDirectory && exist) {
             continue;
         }
         
-        NSArray* keys = [name componentsSeparatedByString:@"/"];
+        setFileTime(full, fileGitTime(full));
         
-        NSString* key = [[keys firstObject] stringByAppendingPathExtension:@"zip"];
-        
-        NSMutableArray* subfiles = [NSMutableArray arrayWithArray:dict[key]];
-        
-        [subfiles addObject:name];
-        
-        [dict setObject:subfiles forKey:key];
+        NSMutableString* cmd = [NSMutableString stringWithFormat:@"cd %@ && zip %@ ", upFolder, desPath];
+        [cmd appendString:[[_srcFolderPath lastPathComponent] stringByAppendingPathComponent:name]];
+        NSLog(@"execute: %@", cmd);
+        system(cmd.UTF8String);
     }
-    
-    for (NSString* key in [dict allKeys]) {
-        
-        NSArray* array = dict[key];
-        
-        NSMutableDictionary* subdict = [NSMutableDictionary dictionary];
-        
-        for (NSString* name in array) {
-            
-            NSString* full = [folder stringByAppendingPathComponent:name];
-            
-            NSDictionary* attr = [fmgr attributesOfItemAtPath:full error:nil];
-            
-            NSDictionary* fdict = fileDict([attr[NSFileSize] longLongValue],
-                                           false,
-                                           fileGitTime(full),
-                                           nil);
-            
-            [subdict setObject:fdict forKey:[[folder lastPathComponent] stringByAppendingPathComponent:name]];
-        }
-        
-        NSDictionary* fdict = fileDict(0,
-                                       true,
-                                       0,
-                                       subdict);
-        [dict setObject:fdict forKey:key];
-    }
-    
-    return dict;
-}
-
-static void checkSrcAssetsTimestamp() {
-    
-    NSDictionary* modules = getModules([_srcManifestPath stringByDeletingLastPathComponent]);
-    
-    NSMutableDictionary* assets = _srcManifestDict[@"assets"];
-    
-    NSMutableDictionary* diff = [NSMutableDictionary dictionary];
-    
-    for (NSString* key in [modules allKeys]) {
-        NSDictionary* dict_real = modules[key];
-        NSDictionary* dict_manifest = assets[key];
-        
-        if (!dict_manifest.count) {
-            [diff setObject:dict_real forKey:key];
-            continue;
-        }
-        
-        dict_real = dict_real[@"content"];
-        dict_manifest = dict_manifest[@"content"];
-        
-        NSMutableDictionary* subdiff = [NSMutableDictionary dictionary];
-        for (NSString* path in [dict_real allKeys]) {
-            NSDictionary* sub_dict_real = dict_real[path];
-            NSDictionary* sub_dict_manifest = dict_manifest[path];
-            
-            if (sub_dict_real && sub_dict_manifest) {
-                if (sub_dict_manifest[@"len"] && sub_dict_real[@"len"]
-                    && [sub_dict_manifest[@"len"] isEqualToNumber:sub_dict_real[@"len"]]
-                    && sub_dict_manifest[@"timestamp"] && sub_dict_real[@"timestamp"]
-                    && [sub_dict_manifest[@"timestamp"] isEqualToNumber:sub_dict_real[@"timestamp"]]) {
-                    continue;
-                }
-            }
-            
-            [subdiff setObject:sub_dict_real forKey:path];
-        }
-        
-        if (subdiff.count) {
-            [diff setObject:subdiff forKey:key];
-        }
-    }
-    
-    NSLog(@"files different from manifest: \n %@", diff);
-    
-    diff = [NSMutableDictionary dictionary];
-    
-    for (NSString* key in [assets allKeys]) {
-        NSDictionary* dict_real = modules[key];
-        NSDictionary* dict_manifest = assets[key];
-        
-        if (!dict_real.count) {
-            [diff setObject:dict_manifest forKey:key];
-            continue;
-        }
-        
-        dict_real = dict_real[@"content"];
-        dict_manifest = dict_manifest[@"content"];
-        
-        NSMutableDictionary* subdiff = [NSMutableDictionary dictionary];
-        for (NSString* path in [dict_manifest allKeys]) {
-            NSDictionary* sub_dict_real = dict_real[path];
-            NSDictionary* sub_dict_manifest = dict_manifest[path];
-            
-            if (sub_dict_real && sub_dict_manifest) {
-                if (sub_dict_manifest[@"len"] && sub_dict_real[@"len"]
-                    && [sub_dict_manifest[@"len"] isEqualToNumber:sub_dict_real[@"len"]]
-                    && sub_dict_manifest[@"timestamp"] && sub_dict_real[@"timestamp"]
-                    && [sub_dict_manifest[@"timestamp"] isEqualToNumber:sub_dict_real[@"timestamp"]]) {
-                    continue;
-                }
-            }
-            
-            [subdiff setObject:sub_dict_manifest forKey:path];
-        }
-        
-        if (subdiff.count) {
-            [diff setObject:subdiff forKey:key];
-        }
-    }
-    
-    NSLog(@"manifests different from files: \n %@", diff);
 }
 
 static void addAssets() {
-
+    
     NSFileManager *fmgr = [NSFileManager defaultManager];
     NSError *err = nil;
     
-    NSString* folder = [_srcManifestPath stringByDeletingLastPathComponent];
+    NSString* folder = _srcFolderPath;
     NSArray* subfiles = [fmgr subpathsOfDirectoryAtPath:folder error:&err];
     
     NSMutableDictionary* dict = [NSMutableDictionary dictionary];
@@ -413,7 +306,7 @@ static void addAssets() {
         [dict setObject:subfiles forKey:key];
     }
     
-    NSString* upFolder = [[_srcManifestPath stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
+    NSString* upFolder = [_srcFolderPath stringByDeletingLastPathComponent];
     
     for (NSString* key in [dict allKeys]) {
         
@@ -421,7 +314,7 @@ static void addAssets() {
         
         NSMutableDictionary* subdict = [NSMutableDictionary dictionary];
         
-        NSString* desPath = [[_desManifestPath stringByDeletingLastPathComponent] stringByAppendingPathComponent:key];
+        NSString* desPath = [_desFolderPath stringByAppendingPathComponent:key];
         
         [fmgr removeItemAtPath:desPath error:nil];
         
@@ -433,12 +326,16 @@ static void addAssets() {
             
             NSDictionary* attr = [fmgr attributesOfItemAtPath:full error:nil];
             
+            long long timestamp = fileGitTime(full);
+            
             NSDictionary* fdict = fileDict([attr[NSFileSize] longLongValue],
                                            false,
-                                           fileGitTime(full),
+                                           timestamp,
                                            nil);
             
             [subdict setObject:fdict forKey:[[_srcFolderPath lastPathComponent] stringByAppendingPathComponent:name]];
+            
+            setFileTime(full, timestamp);
             
             [cmd appendString:[[_srcFolderPath lastPathComponent] stringByAppendingPathComponent:name]];
             [cmd appendString:@" "];
@@ -461,7 +358,6 @@ static void addAssets() {
         [dict setObject:fdict forKey:key];
     }
     
-    [_srcManifestDict setObject:dict forKey:@"assets"];
     [_desManifestDict setObject:dict forKey:@"assets"];
 }
 
@@ -471,34 +367,51 @@ int main(int argc, const char * argv[]) {
         
         // insert code here..
         if (argc < 2) {
-            printf("\n使用 jsonmaker cksrc src-path 检测源 assets 。\n");
+            printf("\n使用 jsonmaker mkerc src-path 为源文件添加时间戳 assets 。\n");
             printf("使用 jsonmaker reset src-path des-path 清空后重新添加 assets 。\n");
             return -1;
         }
         
         NSString* cmd = [NSString stringWithUTF8String:argv[1]];
         
-        if ([cmd.lowercaseString isEqualToString:@"cksrc"]) {
-            //  cksrc ~/Desktop/src/project.manifest
-            _srcManifestPath = [NSString stringWithUTF8String:argv[2]];
+        if ([cmd.lowercaseString isEqualToString:@"mkerc"]) {
+            // mksrc ~/Desktop/src/project.manifest
+            _srcFolderPath = [NSString stringWithUTF8String:argv[2]];
+            _desFolderPath = [NSString stringWithUTF8String:argv[3]];
             
-            NSString* status = checkGit();
-            if (status.length) {
-                NSLog(@"git repository not clean:\n %@", status);
+            if (![_srcFolderPath hasPrefix:@"/"] && ![_srcFolderPath hasPrefix:@"~"]) {
+                _srcFolderPath = [pwd() stringByAppendingPathComponent:_srcFolderPath];
             }
-            else {
-                readManifest();
-                checkSrcAssetsTimestamp();
+            
+            if (![_desFolderPath hasPrefix:@"/"] && ![_desFolderPath hasPrefix:@"~"]) {
+                _desFolderPath = [pwd() stringByAppendingPathComponent:_desFolderPath];
             }
+            
+            NSLog(@"_srcFolderPath: %@", _srcFolderPath);
+            NSLog(@"_desFolderPath: %@", _desFolderPath);
+            
+            luaCompile();
+            mkSrcAssets();
         }
         else if ([cmd.lowercaseString isEqualToString:@"reset"]) {
             // reset ~/Developer/work/fish-lua-clear/src ~/Desktop/src
             _srcFolderPath = [NSString stringWithUTF8String:argv[2]];
             _desFolderPath = [NSString stringWithUTF8String:argv[3]];
             
+            if (![_srcFolderPath hasPrefix:@"/"] && ![_srcFolderPath hasPrefix:@"~"]) {
+                _srcFolderPath = [pwd() stringByAppendingPathComponent:_srcFolderPath];
+            }
+            
+            if (![_desFolderPath hasPrefix:@"/"] && ![_desFolderPath hasPrefix:@"~"]) {
+                _desFolderPath = [pwd() stringByAppendingPathComponent:_desFolderPath];
+            }
+            
+            NSLog(@"_srcFolderPath: %@", _srcFolderPath);
+            NSLog(@"_desFolderPath: %@", _desFolderPath);
+            
             NSString* status = checkGit();
             if (status.length) {
-                NSLog(@"git repository not clean:\n %@", status);
+                NSLog(@"git repository not clean:\n%@", status);
             }
             else {
                 luaCompile();

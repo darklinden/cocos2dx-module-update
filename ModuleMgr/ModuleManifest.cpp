@@ -28,6 +28,9 @@
 #include "json/stringbuffer.h"
 
 #include <fstream>
+#include <time.h>
+#include <utime.h>
+#include <sys/stat.h>
 
 #define KEY_VERSION             "version"
 #define KEY_FORCE_UPDATE        "forceUpdate"
@@ -42,6 +45,7 @@
 
 #define KEY_PATH                "path"
 #define KEY_LEN                 "len"
+#define KEY_TIMESTAMP           "timestamp"
 #define KEY_CONTENT             "content"
 #define KEY_GROUP               "group"
 #define KEY_COMPRESSED          "compressed"
@@ -110,6 +114,9 @@ bool ModuleManifest::isLoaded() const
 
 bool ModuleManifest::isForceUpdate() const
 {
+#if COCOS2D_DEBUG
+    return false;
+#endif
     return _forceUpdate;
 }
 
@@ -129,10 +136,46 @@ bool ModuleManifest::versionEquals(const ModuleManifest *b) const
     return false;
 }
 
-int64_t fileLen(const std::string& filePath) {
+int64_t ModuleManifest::getFileLen(const std::string& filePath) {
     std::ifstream in(filePath, std::ifstream::ate | std::ifstream::binary);
     int64_t len = in.tellg();
     return len;
+}
+
+int64_t ModuleManifest::getFileTime(const std::string& filePath) {
+    struct stat attr;
+    stat(filePath.c_str(), &attr);
+    return attr.st_mtime;
+}
+
+int64_t ModuleManifest::dosDateToTime(unsigned long ulDosDate) {
+    const unsigned long uDate = (unsigned long)(ulDosDate>>16);
+    struct tm ptm;
+    
+    ptm.tm_mday = (unsigned int)(uDate&0x1f) ;
+    ptm.tm_mon =  (unsigned int)((((uDate)&0x1E0)/0x20)-1) ;
+    ptm.tm_year = (unsigned int)(((uDate&0x0FE00)/0x0200)+1980) - 1900 ;
+    
+    ptm.tm_hour = (unsigned int) ((ulDosDate &0xF800)/0x800);
+    ptm.tm_min =  (unsigned int) ((ulDosDate&0x7E0)/0x20) ;
+    ptm.tm_sec =  (unsigned int) (2*(ulDosDate&0x1f)) ;
+    
+    auto time = mktime(&ptm);
+    
+    return time;
+}
+
+int64_t ModuleManifest::setFileTime(const std::string& filePath, long long timestamp) {
+    struct stat attr;
+    
+    stat(filePath.c_str(), &attr);
+    
+    struct utimbuf new_times;
+    new_times.actime = attr.st_atime; /* keep atime unchanged */
+    new_times.modtime = timestamp;    /* set mtime to current time */
+    utime(filePath.c_str(), &new_times);
+    
+    return 0;
 }
 
 std::unordered_map<std::string, ModuleManifest::AssetDiff> ModuleManifest::genDiff()
@@ -151,23 +194,38 @@ std::unordered_map<std::string, ModuleManifest::AssetDiff> ModuleManifest::genDi
         
         if (valueA.compressed) {
             for (auto bit : valueA.content) {
-                if (fileLen(FileUtils::getInstance()->getWritablePath() + bit.second.path) != bit.second.len) {
+                auto fLen = getFileLen(FileUtils::getInstance()->getWritablePath() + bit.second.path);
+                if (fLen != bit.second.len) {
+                    auto fTime = getFileTime(FileUtils::getInstance()->getWritablePath() + bit.second.path) + 60;
+                    if (fTime < bit.second.timestamp) {
+                        AssetDiff diff;
+                        diff.asset = valueA;
+                        diff.type = DiffType::MODIFIED;
+                        diff_map.emplace(key, diff);
+                        diffLen += valueA.len;
+                        break;
+                    }
+                }
+            }
+        }
+        else {
+            auto fLen = getFileLen(FileUtils::getInstance()->getWritablePath() + valueA.path);
+            if (fLen != valueA.len) {
+                auto fTime = getFileTime(FileUtils::getInstance()->getWritablePath() + valueA.path) + 60;
+                if (fTime < valueA.timestamp) {
                     AssetDiff diff;
                     diff.asset = valueA;
                     diff.type = DiffType::MODIFIED;
                     diff_map.emplace(key, diff);
                     diffLen += valueA.len;
-                    break;
                 }
             }
         }
-        else if (fileLen(FileUtils::getInstance()->getWritablePath() + valueA.path) != valueA.len) {
-            AssetDiff diff;
-            diff.asset = valueA;
-            diff.type = DiffType::MODIFIED;
-            diff_map.emplace(key, diff);
-            diffLen += valueA.len;
-        }
+    }
+    
+    CCLOG("ModuleManifest::genDiff diff_map");
+    for (auto it : diff_map) {
+        CCLOG("ModuleManifest::genDiff %s", it.first.c_str());
     }
     
     setDiffLength(diffLen);
@@ -217,7 +275,6 @@ void ModuleManifest::prependSearchPaths()
     }
     FileUtils::getInstance()->setSearchPaths(searchPaths);
 }
-
 
 const std::string& ModuleManifest::getPackageUrl() const
 {
@@ -297,6 +354,17 @@ ModuleManifest::Asset ModuleManifest::parseAsset(const std::string &path, const 
         }
     }
     else asset.len = 0;
+
+    if ( json.HasMember(KEY_TIMESTAMP) )
+    {
+        if ( json[KEY_TIMESTAMP].IsInt64() ) {
+            asset.timestamp = json[KEY_TIMESTAMP].GetInt64();
+        }
+        else if ( json[KEY_TIMESTAMP].IsInt() ) {
+            asset.timestamp = json[KEY_TIMESTAMP].GetInt();
+        }
+    }
+    else asset.timestamp = 0;
     
     if ( json.HasMember(KEY_PATH) && json[KEY_PATH].IsString() )
     {
@@ -336,6 +404,17 @@ ModuleManifest::Asset ModuleManifest::parseAsset(const std::string &path, const 
                 }
             }
             else subasset.len = 0;
+            
+            if ( itr->value.HasMember(KEY_TIMESTAMP) )
+            {
+                if ( itr->value[KEY_TIMESTAMP].IsInt64() ) {
+                    subasset.timestamp = itr->value[KEY_TIMESTAMP].GetInt64();
+                }
+                else if ( itr->value[KEY_TIMESTAMP].IsInt() ) {
+                    subasset.timestamp = itr->value[KEY_TIMESTAMP].GetInt();
+                }
+            }
+            else subasset.timestamp = 0;
             
             if ( itr->value.HasMember(KEY_PATH) && itr->value[KEY_PATH].IsString() )
             {

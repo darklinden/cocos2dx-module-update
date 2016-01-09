@@ -12,15 +12,9 @@
 #include "cocos2d.h"
 #include <stdio.h>
 #include <sys/stat.h>
-
-#if (CC_PLATFORM_IOS == CC_TARGET_PLATFORM) || (CC_PLATFORM_ANDROID == CC_TARGET_PLATFORM)
 #include <unistd.h>
 #include <dirent.h>
-#endif
-
-#if CC_PLATFORM_WIN32 == CC_TARGET_PLATFORM
-#include <Windows.h>
-#endif
+#include <vector>
 
 class FileUtilsExtension {
     
@@ -32,6 +26,7 @@ public:
     
     static bool delete_folder_tree(const std::string& directory_name);
     
+    static std::vector<std::string> content_of_folder(const std::string& path);
 };
 
 #endif /* defined(__ToBeHero__FileDelete__) */

@@ -8,7 +8,6 @@
 
 #include "FileUtilsExtension.h"
 
-#if (CC_PLATFORM_IOS == CC_TARGET_PLATFORM) || (CC_PLATFORM_ANDROID == CC_TARGET_PLATFORM)
 int FileUtilsExtension::path_is_directory(const std::string& path) {
     struct stat s_buf;
     
@@ -37,24 +36,11 @@ bool FileUtilsExtension::delete_folder_tree(const std::string& directory_name) {
     closedir(dp);
     return (0 == rmdir(directory_name.c_str()));
 }
-#endif
-
-#if CC_PLATFORM_WIN32 == CC_TARGET_PLATFORM
-int FileUtilsExtension::path_is_directory(const std::string& path) {
-    struct stat s_buf;
-    
-    if (stat(path.c_str(), &s_buf))
-        return 0;
-    
-    return ( s_buf.st_mode & S_IFDIR );
-}
-#endif
 
 bool FileUtilsExtension::delete_file(const std::string& fileName) {
     
     std::string path = cocos2d::FileUtils::getInstance()->fullPathForFilename(fileName);
     
-#if (CC_TARGET_PLATFORM != CC_PLATFORM_WIN32)
     if (cocos2d::FileUtils::getInstance()->isFileExist(path))
     {
         if (FileUtilsExtension::path_is_directory(path)) {
@@ -69,19 +55,28 @@ bool FileUtilsExtension::delete_file(const std::string& fileName) {
     else {
         return false;
     }
-#else
-    if (cocos2d::FileUtils::getInstance()->isFileExist(path))
-    {
-        if (FileUtilsExtension::path_is_directory(path.c_str())) {
-            return RemoveDirectoryA(path.c_str());
-        }
-        else {
-            return DeleteFileA(path.c_str());
-        }
-    }
-    else {
-        return false;
-    }
-#endif
     
 };
+
+std::vector<std::string> FileUtilsExtension::content_of_folder(const std::string& path)
+{
+    std::vector<std::string> ret;
+    ret.clear();
+    
+    if (!path_is_directory(path)) {
+        return ret;
+    }
+    
+    DIR*            dp;
+    struct dirent*  ep;
+    
+    dp = opendir(path.c_str());
+    
+    while ((ep = readdir(dp)) != NULL) {
+        if (std::string(ep->d_name) == "." || std::string(ep->d_name) == "..") continue;
+        ret.push_back(std::string(ep->d_name));
+    }
+    
+    closedir(dp);
+    return ret;
+}

@@ -61,12 +61,14 @@ public:
     class SubAsset {
     public:
         int64_t len;
+        int64_t timestamp;
         std::string path;
     };
     
     class Asset {
     public:
         int64_t len;
+        int64_t timestamp;
         std::string path;
         bool compressed;
         DownloadState downloadState;
@@ -144,6 +146,12 @@ public:
      */
     void setAssetDownloadState(const std::string &key, const DownloadState &state);
     
+    // tools
+    static int64_t getFileLen(const std::string& filePath);
+    static int64_t getFileTime(const std::string& filePath);
+    static int64_t setFileTime(const std::string& filePath, long long timestamp);
+    static int64_t dosDateToTime(unsigned long ulDosDate);
+        
 private:
     
     //! Indicate whether the ModuleManifest have been fully loaded
