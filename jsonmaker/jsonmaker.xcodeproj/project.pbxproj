@@ -23,6 +23,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1C1B22D91C408BA000D56D74 /* jsonmaker.config */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = jsonmaker.config; sourceTree = "<group>"; };
 		2C9F72F61B6107C800F00487 /* jsonmaker */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = jsonmaker; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C9F72F91B6107C800F00487 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -58,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				2C9F72F91B6107C800F00487 /* main.m */,
+				1C1B22D91C408BA000D56D74 /* jsonmaker.config */,
 			);
 			path = jsonmaker;
 			sourceTree = "<group>";
@@ -89,7 +91,7 @@
 		2C9F72EE1B6107C800F00487 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0640;
+				LastUpgradeCheck = 0720;
 				ORGANIZATIONNAME = by;
 				TargetAttributes = {
 					2C9F72F51B6107C800F00487 = {
@@ -162,6 +164,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -252,6 +255,7 @@
 				2C9F72FF1B6107C800F00487 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
