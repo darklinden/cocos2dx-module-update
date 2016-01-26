@@ -34,7 +34,7 @@ NS_CC_EXT_BEGIN
 
 class ModuleMgr;
 
-class CC_EX_DLL ModuleMgrEvent : public cocos2d::EventCustom
+class ModuleMgrEvent : public cocos2d::EventCustom
 {
 public:
     

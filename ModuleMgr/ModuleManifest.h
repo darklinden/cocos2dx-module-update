@@ -38,7 +38,7 @@
 NS_CC_EXT_BEGIN
 
 
-class CC_EX_DLL ModuleManifest : public Ref
+class ModuleManifest : public Ref
 {
 public:
     

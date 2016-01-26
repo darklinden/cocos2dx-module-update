@@ -29,7 +29,13 @@
 
 #include <fstream>
 #include <time.h>
+
+#if CC_TARGET_PLATFORM != CC_PLATFORM_WIN32
 #include <utime.h>
+#else
+#include <sys/utime.h>
+#endif
+
 #include <sys/stat.h>
 
 #define KEY_VERSION             "version"
@@ -196,6 +202,7 @@ std::unordered_map<std::string, ModuleManifest::AssetDiff> ModuleManifest::genDi
             for (auto bit : valueA.content) {
                 auto fLen = getFileLen(FileUtils::getInstance()->getWritablePath() + bit.second.path);
                 if (fLen != bit.second.len) {
+                    CCLOG("ModuleManifest::genDiff path: %s fTime: %lld bit.second.timestamp: %lld", bit.second.path.c_str(), getFileTime(FileUtils::getInstance()->getWritablePath() + bit.second.path) + 60, bit.second.timestamp);
                     auto fTime = getFileTime(FileUtils::getInstance()->getWritablePath() + bit.second.path) + 60;
                     if (fTime < bit.second.timestamp) {
                         AssetDiff diff;
@@ -211,6 +218,7 @@ std::unordered_map<std::string, ModuleManifest::AssetDiff> ModuleManifest::genDi
         else {
             auto fLen = getFileLen(FileUtils::getInstance()->getWritablePath() + valueA.path);
             if (fLen != valueA.len) {
+                CCLOG("ModuleManifest::genDiff path: %s fTime: %lld valueA.timestamp: %lld", valueA.path.c_str(), getFileTime(FileUtils::getInstance()->getWritablePath() + valueA.path) + 60, valueA.timestamp);
                 auto fTime = getFileTime(FileUtils::getInstance()->getWritablePath() + valueA.path) + 60;
                 if (fTime < valueA.timestamp) {
                     AssetDiff diff;

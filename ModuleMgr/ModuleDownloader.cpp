@@ -24,6 +24,7 @@
 
 #include "ModuleDownloader.h"
 #include "cocos2d.h"
+#include "network/HttpClient.h"
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <cstdio>
@@ -300,21 +301,31 @@ void ModuleDownloader::downloadToBufferAsync(const std::string &srcUrl, unsigned
 {
     if (buffer != nullptr)
     {
-        std::shared_ptr<ModuleDownloader> downloader = shared_from_this();
-        ProgressData pData;
-        pData.customId = customId;
-        pData.url = srcUrl;
-        pData.downloader = downloader;
-        pData.downloaded = 0;
-        pData.totalToDownload = 0;
-        
-        StreamData streamBuffer;
-        streamBuffer.buffer = buffer;
-        streamBuffer.total = size;
-        streamBuffer.offset = 0;
-        
-        auto t = std::thread(&ModuleDownloader::downloadToBuffer, this, srcUrl, customId, streamBuffer, pData);
-        t.detach();
+        auto url = urlTrimToBase(srcUrl);
+        fetchIPAddress(url, [=](const std::string & ip) {
+            
+            if (ip.length()) {
+                _ip_map[url] = ip;
+            }
+            
+            std::string ipurl = fetchIPAddress(srcUrl);
+           
+            std::shared_ptr<ModuleDownloader> downloader = shared_from_this();
+            ProgressData pData;
+            pData.customId = customId;
+            pData.url = ipurl;
+            pData.downloader = downloader;
+            pData.downloaded = 0;
+            pData.totalToDownload = 0;
+            
+            StreamData streamBuffer;
+            streamBuffer.buffer = buffer;
+            streamBuffer.total = size;
+            streamBuffer.offset = 0;
+            
+            auto t = std::thread(&ModuleDownloader::downloadToBuffer, this, ipurl, customId, streamBuffer, pData);
+            t.detach();
+        });
     }
 }
 
@@ -388,14 +399,25 @@ void ModuleDownloader::downloadToBuffer(const std::string &srcUrl, const std::st
 
 void ModuleDownloader::downloadAsync(const std::string &srcUrl, const std::string &storagePath, const std::string &customId/* = ""*/)
 {
-    FileDescriptor fDesc;
-    ProgressData pData;
-    prepareDownload(srcUrl, storagePath, customId, false, &fDesc, &pData);
-    if (fDesc.fp != NULL)
-    {
-        auto t = std::thread(&ModuleDownloader::download, this, srcUrl, customId, fDesc, pData);
-        t.detach();
-    }
+    // only fetch the first one, default treat all res using the same server
+    auto url = urlTrimToBase(srcUrl);
+    fetchIPAddress(url, [=](const std::string & ip) {
+        
+        if (ip.length()) {
+            _ip_map[url] = ip;
+        }
+        
+        std::string ipurl = fetchIPAddress(srcUrl);
+        
+        FileDescriptor fDesc;
+        ProgressData pData;
+        prepareDownload(ipurl, storagePath, customId, false, &fDesc, &pData);
+        if (fDesc.fp != NULL)
+        {
+            auto t = std::thread(&ModuleDownloader::download, this, ipurl, customId, fDesc, pData);
+            t.detach();
+        }
+    });
 }
 
 void ModuleDownloader::downloadSync(const std::string &srcUrl, const std::string &storagePath, const std::string &customId/* = ""*/)
@@ -463,10 +485,222 @@ void ModuleDownloader::download(const std::string &srcUrl, const std::string &cu
     }
 }
 
+std::string strTrim(const std::string str, const std::string pattern)
+{
+    std::string src_str = str;
+    
+    while (src_str.length()) {
+        auto prefix = src_str.substr(0, 1);
+        if (prefix == pattern
+            || prefix == "\n"
+            || prefix == "\t") {
+            src_str = src_str.substr(1);
+        }
+        else {
+            break;
+        }
+    }
+    
+    while (src_str.length()) {
+        auto suffix = src_str.substr(src_str.length() - 1);
+        if (suffix == pattern
+            || suffix == "\n"
+            || suffix == "\t") {
+            src_str = src_str.substr(0, src_str.length() - 1);
+        }
+        else {
+            break;
+        }
+    }
+    
+    return src_str;
+}
+
+std::vector<std::string> strSplit(std::string str, std::string pattern)
+{
+    std::string::size_type pos;
+    std::vector<std::string> result;
+    str += pattern;
+    for (ssize_t i = 0; i < str.size(); i++) {
+        pos = str.find(pattern, i);
+        if (pos < str.size()) {
+            std::string s = str.substr(i, pos - i);
+            result.push_back(s);
+            i = pos + pattern.size() - 1;
+        }
+    }
+    return result;
+}
+
+std::string parseIP(const std::string src_data)
+{
+    std::string ret = "";
+    auto data = strTrim(src_data, " ");
+    auto split_semicolon = strSplit(data, ";");
+    
+    for (auto tmp : split_semicolon) {
+        auto split_comma = strSplit(tmp, ",");
+        for (auto sub_tmp : split_comma) {
+            auto split_dot = strSplit(sub_tmp, ".");
+            if (split_dot.size() == 4) {
+                for (auto sub_sub_tmp : split_dot) {
+                    auto a = strTrim(sub_sub_tmp, " ");
+                    auto i = atoi(a.c_str());
+                    if (i > 0 && i < 256) {
+                        if (ret.length()) {
+                            ret += ".";
+                            ret += StringUtils::toString(i);
+                        }
+                        else {
+                            ret += StringUtils::toString(i);
+                        }
+                    }
+                    else {
+                        ret = "";
+                        break;
+                    }
+                }
+                if (ret.length()) {
+                    break;
+                }
+            }
+        }
+        if (ret.length()) {
+            break;
+        }
+    }
+    
+    return ret;
+}
+
+std::string strReplace(const std::string& subject,
+                const std::string& search,
+                const std::string& replace) {
+    if (!search.length()) {
+        return subject;
+    }
+    
+    std::string str_des = std::string(subject);
+    size_t pos = 0;
+    while ((pos = str_des.find(search, pos)) != std::string::npos) {
+        str_des.replace(pos, search.length(), replace);
+        pos += replace.length();
+    }
+    
+    return str_des;
+}
+
+void ModuleDownloader::setDNS(const std::string &dns)
+{
+    _dns = dns;
+}
+
+void ModuleDownloader::fetchIPAddress(const std::string &url, std::function<void (const std::string &)> completion)
+{
+    if (_ip_map[url].length() || !url.length() || !_dns.length()) {
+        if (completion) {
+            completion(_ip_map[url]);
+        }
+        return;
+    }
+    
+    cocos2d::network::HttpClient::getInstance()->setTimeoutForConnect(3);
+    
+    cocos2d::network::HttpRequest* request = new cocos2d::network::HttpRequest();
+    std::string httppath = _dns + url;
+    request->setUrl(httppath.c_str());
+    request->setRequestType(cocos2d::network::HttpRequest::Type::GET);
+    request->setResponseCallback([=](cocos2d::network::HttpClient* client, cocos2d::network::HttpResponse* response) {
+        
+        cocos2d::network::HttpClient::getInstance()->setTimeoutForConnect(10);
+        
+        std::string ip = "";
+        if (response) {
+            CCLOG("ModuleDownloader::fetchIPAddress response: %ld", response->getResponseCode());
+            if (response->isSucceed()) {
+                std::vector<char>*  buffer= response->getResponseData();
+                std::string data = std::string(buffer->data(), buffer->size());
+                
+                ip = parseIP(data);
+            }
+        }
+        
+        if (completion) {
+            completion(ip);
+        }
+    });
+    
+    request->setTag("dnsGetHost");
+    cocos2d::network::HttpClient::getInstance()->send(request);
+    request->release();
+}
+
+std::string ModuleDownloader::fetchIPAddress(const std::string &url)
+{
+    std::string str_url = strReplace(url, "\\", "");
+    
+    std::string prefix = "http://";
+    auto pos_start = str_url.find(prefix);
+    if (pos_start == str_url.npos) {
+        prefix = "https://";
+        pos_start = str_url.find(prefix);
+    }
+    
+    if (pos_start == str_url.npos) {
+        return url;
+    }
+    
+    auto pos_end = str_url.find("/", pos_start + prefix.length());
+    
+    auto start = pos_start + prefix.length();
+    auto len = pos_end - (pos_start + prefix.length());
+    
+    std::string tmp = str_url.substr(start, len);
+    
+    if (tmp.length()) {
+        if (_ip_map[tmp].length()) {
+            str_url = str_url.replace(start, len, _ip_map[tmp]);
+        }
+    }
+    
+    return str_url;
+}
+
+std::string ModuleDownloader::urlTrimToBase(const std::string &url)
+{
+    std::string str_url = strReplace(url, "\\", "");
+    
+    std::string prefix = "http://";
+    auto pos_start = str_url.find(prefix);
+    if (pos_start == str_url.npos) {
+        prefix = "https://";
+        pos_start = str_url.find(prefix);
+    }
+    
+    if (pos_start == str_url.npos) {
+        return "";
+    }
+    
+    auto pos_end = str_url.find("/", pos_start + prefix.length());
+    
+    std::string tmp = str_url.substr(pos_start + prefix.length(), pos_end - (pos_start + prefix.length()));
+    
+    return tmp;
+}
+
 void ModuleDownloader::batchDownloadAsync(const DownloadUnits &units, const std::string &batchId/* = ""*/)
 {
-    auto t = std::thread(&ModuleDownloader::batchDownloadSync, this, units, batchId);
-    t.detach();
+    // only fetch the first one, default treat all res using the same server
+    auto url = urlTrimToBase(units.begin()->second.srcUrl);
+    fetchIPAddress(url, [=](const std::string & ip) {
+        
+        if (ip.length()) {
+            _ip_map[url] = ip;
+        }
+        
+        auto t = std::thread(&ModuleDownloader::batchDownloadSync, this, units, batchId);
+        t.detach();
+    });
 }
 
 void ModuleDownloader::batchDownloadSync(const DownloadUnits &units, const std::string &batchId/* = ""*/)
@@ -534,7 +768,7 @@ void ModuleDownloader::groupBatchDownload(const DownloadUnits &units)
     for (auto it = units.cbegin(); it != units.cend(); ++it)
     {
         DownloadUnit unit = it->second;
-        std::string srcUrl = unit.srcUrl;
+        std::string srcUrl = fetchIPAddress(unit.srcUrl);
         std::string storagePath = unit.storagePath;
         std::string customId = unit.customId;
         

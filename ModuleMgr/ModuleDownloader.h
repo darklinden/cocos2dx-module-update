@@ -36,7 +36,7 @@
 
 NS_CC_EXT_BEGIN
 
-class CC_EX_DLL ModuleDownloader : public std::enable_shared_from_this<ModuleDownloader>
+class ModuleDownloader : public std::enable_shared_from_this<ModuleDownloader>
 {
 public:
 
@@ -141,6 +141,8 @@ public:
     ModuleDownloader();
 
     ~ModuleDownloader();
+    
+    void setDNS(const std::string& dns);
 
 protected:
     
@@ -166,7 +168,14 @@ protected:
     
     void notifyError(const std::string &msg, const std::string &customId, int curle_code);
 
+    void fetchIPAddress(const std::string& url, std::function<void(const std::string&)> completion);
+    std::string fetchIPAddress(const std::string& url);
+    std::string urlTrimToBase(const std::string& url);
+    
 private:
+    
+    std::string _dns = "http://119.29.29.29/d?dn=";
+    std::map<std::string, std::string> _ip_map;
 
     int _connectionTimeout;
 

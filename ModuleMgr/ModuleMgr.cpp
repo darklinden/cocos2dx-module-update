@@ -29,7 +29,7 @@
 #include <curl/easy.h>
 #include <stdio.h>
 
-#include "unzip.h"
+#include "unzip/unzip.h"
 #include "FileUtilsExtension.h"
 
 #if (CC_PLATFORM_ANDROID == CC_TARGET_PLATFORM)
@@ -48,8 +48,8 @@ NS_CC_EXT_BEGIN
 
 #define DEFAULT_CONNECTION_TIMEOUT 8
 
-const std::string ModuleMgr::MANIFEST_ID = "@manifest";
-const std::string ModuleMgr::BATCH_UPDATE_ID = "@batch_update";
+std::string ModuleMgr::MANIFEST_ID = "@manifest";
+std::string ModuleMgr::BATCH_UPDATE_ID = "@batch_update";
 
 // Implementation of ModuleMgr
 
@@ -112,6 +112,11 @@ ModuleMgr* ModuleMgr::create(const std::string &remoteManifestUrl, const std::st
         CC_SAFE_DELETE(ret);
     }
     return ret;
+}
+
+void ModuleMgr::setDNS(const std::string& dns)
+{
+    _downloader->setDNS(dns);
 }
 
 std::string ModuleMgr::basename(const std::string& path)
@@ -737,6 +742,8 @@ void ModuleMgr::exportZipedSrc(const std::string &zip, const std::string &desPat
     std::string fzipPath = desPath + "src.zip";
 #elif (CC_PLATFORM_IOS == CC_TARGET_PLATFORM)
     std::string fzipPath = zip;
+#elif (CC_PLATFORM_WIN32 == CC_TARGET_PLATFORM)
+	std::string fzipPath = zip;
 #endif
     
     // Find root path for zip file
@@ -847,6 +854,8 @@ void ModuleMgr::exportZipedSrc(const std::string &zip, const std::string &desPat
             } while(error > 0);
             
             fclose(out);
+            
+            FileUtilsExtension::skipiCloudBackupForItemAtPath(fullPath);
         }
         
         unzCloseCurrentFile(zipfile);
@@ -887,6 +896,8 @@ void ModuleMgr::exportZipedSrc(const std::string &zip, const std::string &desPat
         // Write current file content to destinate file.
         fwrite(ver_content.c_str(), ver_content.length(), 1, out);
         fclose(out);
+        
+        FileUtilsExtension::skipiCloudBackupForItemAtPath(ver_des);
     }
     
     

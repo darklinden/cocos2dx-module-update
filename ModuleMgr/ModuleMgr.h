@@ -43,7 +43,7 @@ NS_CC_EXT_BEGIN
 /**
  * @brief   This class is used to auto update resources, such as pictures or scripts.
  */
-class CC_EX_DLL ModuleMgr : public Ref
+class ModuleMgr : public Ref
 {
 public:
     
@@ -60,8 +60,8 @@ public:
         FAIL_TO_UPDATE
     };
     
-    const static std::string MANIFEST_ID;
-    const static std::string BATCH_UPDATE_ID;
+    static std::string MANIFEST_ID;
+    static std::string BATCH_UPDATE_ID;
     
     /** @brief Create function for creating a new ModuleMgr
      @param manifestUrl   The url for the local manifest file
@@ -70,6 +70,8 @@ public:
                 only if it doesn't exist, ModuleMgr will use the given manifestUrl.
      */
     static ModuleMgr* create(const std::string &remoteManifestUrl, const std::string &storagePath);
+    
+    void setDNS(const std::string& dns);
     
     /** @brief  Check out if there is a new version of manifest.
      *          You may use this method before updating, then let user determine whether

@@ -49,10 +49,10 @@ class ModuleMgr;
  *
  *        dispatcher->removeEventListener(listener);
  */
-class CC_EX_DLL ModuleMgrEventListener : public cocos2d::EventListenerCustom
+class ModuleMgrEventListener : public cocos2d::EventListenerCustom
 {
 public:
-    
+	
     friend class ModuleMgr;
     
     /** Creates an event listener with type and callback.
@@ -73,7 +73,8 @@ CC_CONSTRUCTOR_ACCESS:
     bool init(const ModuleMgr *AssetsManagerEx, const std::function<void(ModuleMgrEvent*)>& callback);
     
 protected:
-    static const std::string LISTENER_ID;
+
+	static std::string LISTENER_ID;
     
     std::function<void(ModuleMgrEvent*)> _onAssetsManagerExEvent;
     

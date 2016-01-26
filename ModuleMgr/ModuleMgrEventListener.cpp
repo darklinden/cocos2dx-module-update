@@ -29,7 +29,7 @@
 
 NS_CC_EXT_BEGIN
 
-const std::string ModuleMgrEventListener::LISTENER_ID = "__cc_module_manager_";
+std::string ModuleMgrEventListener::LISTENER_ID = "__cc_module_manager_";
 
 ModuleMgrEventListener::ModuleMgrEventListener()
 : _onAssetsManagerExEvent(nullptr)

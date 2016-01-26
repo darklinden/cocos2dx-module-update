@@ -8,7 +8,7 @@
 
 #include "FileUtilsExtension.h"
 
-#if CC_TARGET_PLATFORM != CC_PLATFORM_IOS
+#if CC_TARGET_PLATFORM == CC_PLATFORM_IOS
 
 int FileUtilsExtension::path_is_directory(const std::string& path) {
 #ifndef WIN32
@@ -146,7 +146,18 @@ std::vector<std::string> FileUtilsExtension::content_of_folder(const std::string
 
 void FileUtilsExtension::skipiCloudBackupForItemAtPath(const std::string& path)
 {
-
+    NSString* filePath = [NSString stringWithUTF8String:path.c_str()];
+    
+    if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+        return;
+    }
+    
+    NSURL* URL = [NSURL fileURLWithPath:filePath];
+    if (URL) {
+        [URL setResourceValue:[NSNumber numberWithBool:YES]
+                       forKey:NSURLIsExcludedFromBackupKey
+                        error:nil];
+    }
 }
 
 #endif
