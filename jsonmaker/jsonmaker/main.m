@@ -119,6 +119,7 @@ static long long fileGitTime(NSString* filepath)
     NSString *grepOutput = [[NSString alloc] initWithData:data
                                                  encoding:NSUTF8StringEncoding];
     long long ret = [grepOutput longLongValue];
+    printf("\nfileGitTime: %s - %lld\n", filepath.UTF8String, ret);
     return ret;
 }
 
