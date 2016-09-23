@@ -283,20 +283,24 @@ static void addAssets(NSArray *excludes) {
         }
         
         if ([name.lastPathComponent isEqualToString:_manifest_name]) {
+            NSLog(@"exclude: %@", name);
             continue;
         }
         
         if ([name.pathExtension.lowercaseString isEqualToString:@"lua"]) {
+            NSLog(@"exclude: %@", name);
             continue;
         }
         
         BOOL ex = NO;
         for (int i = 0; i < excludes.count; i++) {
             if ([name hasPrefix:excludes[i]]) {
+                NSLog(@"exclude: %@", name);
                 ex = YES;
                 break;
             }
             if ([[folder stringByAppendingPathComponent:name] hasPrefix:excludes[i]]) {
+                NSLog(@"exclude: %@", name);
                 ex = YES;
                 break;
             }
