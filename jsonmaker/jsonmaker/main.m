@@ -262,7 +262,7 @@ static void mkSrcAssets() {
     }
 }
 
-static void addAssets() {
+static void addAssets(NSArray *excludes) {
     
     NSFileManager *fmgr = [NSFileManager defaultManager];
     NSError *err = nil;
@@ -287,6 +287,21 @@ static void addAssets() {
         }
         
         if ([name.pathExtension.lowercaseString isEqualToString:@"lua"]) {
+            continue;
+        }
+        
+        BOOL ex = NO;
+        for (int i = 0; i < excludes.count; i++) {
+            if ([name hasPrefix:excludes[i]]) {
+                ex = YES;
+                break;
+            }
+            if ([[folder stringByAppendingPathComponent:name] hasPrefix:excludes[i]]) {
+                ex = YES;
+                break;
+            }
+        }
+        if (ex) {
             continue;
         }
         
@@ -368,9 +383,18 @@ int main(int argc, const char * argv[]) {
         
         // insert code here..
         if (argc < 2) {
-            printf("\n使用 jsonmaker mkerc src-path 为源文件添加时间戳 assets 。\n");
-            printf("使用 jsonmaker reset src-path des-path 清空后重新添加 assets 。\n");
+            printf("\n使用 jsonmaker mkerc src-path des-path -ex exclude1 exclude2 ... 为源文件添加时间戳 assets 。\n");
+            printf("使用 jsonmaker reset src-path des-path -ex exclude1 exclude2 ... 清空后重新添加 assets 。\n");
             return -1;
+        }
+        
+        NSMutableArray *excludes = [NSMutableArray array];
+        if (argc > 5) {
+            if ([[NSString stringWithUTF8String:argv[4]] isEqualToString:@"-ex"]) {
+                for (int i = 5; i < argc; i++) {
+                    [excludes addObject:[NSString stringWithUTF8String:argv[i]]];
+                }
+            }
         }
         
         NSString* cmd = [NSString stringWithUTF8String:argv[1]];
@@ -417,7 +441,7 @@ int main(int argc, const char * argv[]) {
             else {
                 luaCompile();
                 readManifest();
-                addAssets();
+                addAssets(excludes);
                 saveManifest();
             }
         }
