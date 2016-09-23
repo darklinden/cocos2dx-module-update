@@ -214,7 +214,7 @@ static NSString* checkGit()
     return grepOutput;
 }
 
-static void mkSrcAssets() {
+static void mkSrcAssets(NSArray *excludes) {
     
     NSFileManager *fmgr = [NSFileManager defaultManager];
     NSError *err = nil;
@@ -237,10 +237,29 @@ static void mkSrcAssets() {
         }
         
         if ([name.lastPathComponent isEqualToString:_manifest_name]) {
+            NSLog(@"exclude: %@", name);
             continue;
         }
         
         if ([name.pathExtension.lowercaseString isEqualToString:@"lua"]) {
+            NSLog(@"exclude: %@", name);
+            continue;
+        }
+        
+        BOOL ex = NO;
+        for (int i = 0; i < excludes.count; i++) {
+            if ([name hasPrefix:excludes[i]]) {
+                NSLog(@"exclude: %@", name);
+                ex = YES;
+                break;
+            }
+            if ([[folder stringByAppendingPathComponent:name] hasPrefix:excludes[i]]) {
+                NSLog(@"exclude: %@", name);
+                ex = YES;
+                break;
+            }
+        }
+        if (ex) {
             continue;
         }
         
@@ -420,7 +439,7 @@ int main(int argc, const char * argv[]) {
             NSLog(@"_desFolderPath: %@", _desFolderPath);
             
             luaCompile();
-            mkSrcAssets();
+            mkSrcAssets(excludes);
         }
         else if ([cmd.lowercaseString isEqualToString:@"reset"]) {
             // reset ~/Developer/work/fish-lua-clear/src ~/Desktop/src
