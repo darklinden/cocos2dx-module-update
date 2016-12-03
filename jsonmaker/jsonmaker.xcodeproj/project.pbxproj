@@ -7,7 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2C9F72FA1B6107C800F00487 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 2C9F72F91B6107C800F00487 /* main.m */; };
+		1CE988F91DF26D5600143AB8 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 1CE988F81DF26D5600143AB8 /* libstdc++.tbd */; };
+		2C9F72FA1B6107C800F00487 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2C9F72F91B6107C800F00487 /* main.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,8 +25,9 @@
 
 /* Begin PBXFileReference section */
 		1C1B22D91C408BA000D56D74 /* jsonmaker.config */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = jsonmaker.config; sourceTree = "<group>"; };
+		1CE988F81DF26D5600143AB8 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "usr/lib/libstdc++.tbd"; sourceTree = SDKROOT; };
 		2C9F72F61B6107C800F00487 /* jsonmaker */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = jsonmaker; sourceTree = BUILT_PRODUCTS_DIR; };
-		2C9F72F91B6107C800F00487 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		2C9F72F91B6107C800F00487 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -33,17 +35,27 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1CE988F91DF26D5600143AB8 /* libstdc++.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1CE988F71DF26D5600143AB8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1CE988F81DF26D5600143AB8 /* libstdc++.tbd */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		2C9F72ED1B6107C800F00487 = {
 			isa = PBXGroup;
 			children = (
 				2C9F72F81B6107C800F00487 /* jsonmaker */,
 				2C9F72F71B6107C800F00487 /* Products */,
+				1CE988F71DF26D5600143AB8 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -58,7 +70,7 @@
 		2C9F72F81B6107C800F00487 /* jsonmaker */ = {
 			isa = PBXGroup;
 			children = (
-				2C9F72F91B6107C800F00487 /* main.m */,
+				2C9F72F91B6107C800F00487 /* main.mm */,
 				1C1B22D91C408BA000D56D74 /* jsonmaker.config */,
 			);
 			path = jsonmaker;
@@ -137,7 +149,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2C9F72FA1B6107C800F00487 /* main.m in Sources */,
+				2C9F72FA1B6107C800F00487 /* main.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,6 +237,7 @@
 		2C9F72FE1B6107C800F00487 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_C_LANGUAGE_STANDARD = c11;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -232,6 +245,7 @@
 		2C9F72FF1B6107C800F00487 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_C_LANGUAGE_STANDARD = c11;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

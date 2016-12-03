@@ -12,6 +12,9 @@
 #include <time.h>
 #include <utime.h>
 #include <sys/stat.h>
+#include <stdio.h>
+#include <iostream>
+#include <iomanip>
 
 static __strong NSString* _srcFolderPath = nil;
 
@@ -63,11 +66,11 @@ static void saveManifest() {
                             options:NSJSONWritingPrettyPrinted
                             error:&error];
         if (!jsonData) {
-            NSLog(@"manifest save json failed %@", error);
+            printf("manifest save json failed %s\n", error.description.UTF8String);
         }
         else {
             if (![jsonData writeToFile:_desManifestPath atomically:YES]) {
-                NSLog(@"manifest save json failed");
+                printf("manifest save json failed\n");
             }
         }
     }
@@ -119,7 +122,7 @@ static long long fileGitTime(NSString* filepath)
     NSString *grepOutput = [[NSString alloc] initWithData:data
                                                  encoding:NSUTF8StringEncoding];
     long long ret = [grepOutput longLongValue];
-    printf("\nfileGitTime: %s - %lld\n", filepath.UTF8String, ret);
+    printf("fileGitTime: %s - %lld\n", filepath.UTF8String, ret);
     return ret;
 }
 
@@ -164,8 +167,8 @@ static void luaCompile()
     if (param.length) {
         cmd = [[cmd stringByAppendingString:@" "] stringByAppendingString:param];
     }
-    
-    NSLog(@"execute: %@", cmd);
+
+    printf("execute: %s\n", cmd.UTF8String);
     system(cmd.UTF8String);
 }
 
@@ -225,9 +228,10 @@ static void mkSrcAssets(NSArray *excludes) {
     NSString* upFolder = [_srcFolderPath stringByDeletingLastPathComponent];
     
     NSString* desPath = [[_desFolderPath stringByAppendingPathComponent:_srcFolderPath.lastPathComponent] stringByAppendingPathExtension:@"zip"];
-    
+
+    int cnt = 0;
     for (NSString* name in subfiles) {
-        
+        cnt += 1;
         if ([name.lastPathComponent isEqualToString:@".DS_Store"]) {
             continue;
         }
@@ -237,24 +241,24 @@ static void mkSrcAssets(NSArray *excludes) {
         }
         
         if ([name.lastPathComponent isEqualToString:_manifest_name]) {
-            NSLog(@"exclude: %@", name);
+            printf("exclude: %s\n", name.UTF8String);
             continue;
         }
         
         if ([name.pathExtension.lowercaseString isEqualToString:@"lua"]) {
-            NSLog(@"exclude: %@", name);
+            printf("exclude: %s\n", name.UTF8String);
             continue;
         }
         
         BOOL ex = NO;
         for (int i = 0; i < excludes.count; i++) {
             if ([name hasPrefix:excludes[i]]) {
-                NSLog(@"exclude: %@", name);
+                printf("exclude: %s\n", name.UTF8String);
                 ex = YES;
                 break;
             }
             if ([[folder stringByAppendingPathComponent:name] hasPrefix:excludes[i]]) {
-                NSLog(@"exclude: %@", name);
+                printf("exclude: %s\n", name.UTF8String);
                 ex = YES;
                 break;
             }
@@ -276,9 +280,19 @@ static void mkSrcAssets(NSArray *excludes) {
         
         NSMutableString* cmd = [NSMutableString stringWithFormat:@"cd %@ && zip %@ ", upFolder, desPath];
         [cmd appendString:[[_srcFolderPath lastPathComponent] stringByAppendingPathComponent:name]];
-        NSLog(@"execute: %@", cmd);
+        printf("execute: %s\n", cmd.UTF8String);
         system(cmd.UTF8String);
+
+        std::cout << std::fixed;
+        std::cout.precision(2);
+
+        std::cout << "                                      \r";
+        std::cout.flush();
+
+        std::cout << "progress: " << float(cnt * 100.0 / subfiles.count) << " % \r";
+        std::cout.flush();
     }
+    printf("Done.\n");
 }
 
 static void addAssets(NSArray *excludes) {
@@ -302,24 +316,24 @@ static void addAssets(NSArray *excludes) {
         }
         
         if ([name.lastPathComponent isEqualToString:_manifest_name]) {
-            NSLog(@"exclude: %@", name);
+            printf("exclude: %s\n", name.UTF8String);
             continue;
         }
         
         if ([name.pathExtension.lowercaseString isEqualToString:@"lua"]) {
-            NSLog(@"exclude: %@", name);
+            printf("exclude: %s\n", name.UTF8String);
             continue;
         }
         
         BOOL ex = NO;
         for (int i = 0; i < excludes.count; i++) {
             if ([name hasPrefix:excludes[i]]) {
-                NSLog(@"exclude: %@", name);
+                printf("exclude: %s\n", name.UTF8String);
                 ex = YES;
                 break;
             }
             if ([[folder stringByAppendingPathComponent:name] hasPrefix:excludes[i]]) {
-                NSLog(@"exclude: %@", name);
+                printf("exclude: %s\n", name.UTF8String);
                 ex = YES;
                 break;
             }
@@ -357,10 +371,14 @@ static void addAssets(NSArray *excludes) {
         
         [fmgr removeItemAtPath:desPath error:nil];
         
-        NSMutableString* cmd = [NSMutableString stringWithFormat:@"cd %@ && zip %@ ", upFolder, desPath];
-        
+        NSMutableString* cmd = [NSMutableString stringWithFormat:@"cd %@ && zip -q %@ ", upFolder, desPath];
+
+        printf("deal with %s\n", key.UTF8String);
+
+        int cnt = 0;
+
         for (NSString* name in array) {
-            
+            cnt += 1;
             NSString* full = [folder stringByAppendingPathComponent:name];
             
             NSDictionary* attr = [fmgr attributesOfItemAtPath:full error:nil];
@@ -378,6 +396,15 @@ static void addAssets(NSArray *excludes) {
             
             [cmd appendString:[[_srcFolderPath lastPathComponent] stringByAppendingPathComponent:name]];
             [cmd appendString:@" "];
+
+            std::cout << std::fixed;
+            std::cout.precision(2);
+
+            std::cout << "                                      \r";
+            std::cout.flush();
+
+            std::cout << "progress: " << float(cnt * 100.0 / subfiles.count) << " % \r";
+            std::cout.flush();
         }
         
         NSLog(@"execute: %@", cmd);
