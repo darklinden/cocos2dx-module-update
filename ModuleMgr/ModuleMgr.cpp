@@ -114,11 +114,6 @@ ModuleMgr* ModuleMgr::create(const std::string &remoteManifestUrl, const std::st
     return ret;
 }
 
-void ModuleMgr::setDNS(const std::string& dns)
-{
-    _downloader->setDNS(dns);
-}
-
 std::string ModuleMgr::basename(const std::string& path)
 {
     size_t found = path.find_last_of("/\\");
@@ -290,6 +285,9 @@ bool ModuleMgr::decompress(const std::string &zip)
         }
         
         unzCloseCurrentFile(zipfile);
+        
+        ModuleManifest::setFileTime(fullPath, ModuleManifest::dosDateToTime(fileInfo.dosDate));
+        FileUtilsExtension::skipiCloudBackupForItemAtPath(fullPath);
         
         // Goto next entry listed in the zip file.
         if ((i+1) < global_info.number_entry)
@@ -854,13 +852,12 @@ void ModuleMgr::exportZipedSrc(const std::string &zip, const std::string &desPat
             } while(error > 0);
             
             fclose(out);
-            
-            FileUtilsExtension::skipiCloudBackupForItemAtPath(fullPath);
         }
         
         unzCloseCurrentFile(zipfile);
         
         ModuleManifest::setFileTime(fullPath, ModuleManifest::dosDateToTime(fileInfo.dosDate));
+        FileUtilsExtension::skipiCloudBackupForItemAtPath(fullPath);
         
         // Goto next entry listed in the zip file.
         if ((i+1) < global_info.number_entry)

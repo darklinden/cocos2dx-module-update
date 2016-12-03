@@ -71,8 +71,6 @@ public:
      */
     static ModuleMgr* create(const std::string &remoteManifestUrl, const std::string &storagePath);
     
-    void setDNS(const std::string& dns);
-    
     /** @brief  Check out if there is a new version of manifest.
      *          You may use this method before updating, then let user determine whether
      *          he wants to update resources.

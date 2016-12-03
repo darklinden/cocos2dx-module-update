@@ -87,6 +87,8 @@ public:
     
     bool isForceUpdate() const;
     
+    bool isForceAlert() const;
+    
     int64_t diffLength() const;
     
     void setDiffLength(int64_t len);
@@ -165,6 +167,7 @@ private:
     
     
     bool _forceUpdate;
+    bool _forceAlert;
     
     int64_t _diffLen;
     

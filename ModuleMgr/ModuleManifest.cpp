@@ -40,6 +40,7 @@
 
 #define KEY_VERSION             "version"
 #define KEY_FORCE_UPDATE        "forceUpdate"
+#define KEY_FORCE_ALERT         "forceAlert"
 #define KEY_PACKAGE_URL         "packageUrl"
 #define KEY_ModuleManifest_URL  "remoteManifestUrl"
 #define KEY_VERSION_URL         "remoteVersionUrl"
@@ -65,6 +66,7 @@ ModuleManifest::ModuleManifest(const std::string& ModuleManifestUrl/* = ""*/)
 , _ModuleManifestRoot("")
 , _remoteModuleManifestUrl("")
 , _forceUpdate(false)
+, _forceAlert(false)
 , _diffLen(0)
 {
     // Init variables
@@ -126,6 +128,14 @@ bool ModuleManifest::isForceUpdate() const
     return _forceUpdate;
 }
 
+bool ModuleManifest::isForceAlert() const
+{
+#if COCOS2D_DEBUG
+    return true;
+#endif
+    return _forceAlert;
+}
+
 int64_t ModuleManifest::diffLength() const
 {
     return _diffLen;
@@ -143,12 +153,18 @@ bool ModuleManifest::versionEquals(const ModuleManifest *b) const
 }
 
 int64_t ModuleManifest::getFileLen(const std::string& filePath) {
+    if (!FileUtils::getInstance()->isFileExist(filePath)) {
+        return -1;
+    }
     std::ifstream in(filePath, std::ifstream::ate | std::ifstream::binary);
     int64_t len = in.tellg();
     return len;
 }
 
 int64_t ModuleManifest::getFileTime(const std::string& filePath) {
+    if (!FileUtils::getInstance()->isFileExist(filePath)) {
+        return 0;
+    }
     struct stat attr;
     stat(filePath.c_str(), &attr);
     return attr.st_mtime;
@@ -172,6 +188,9 @@ int64_t ModuleManifest::dosDateToTime(unsigned long ulDosDate) {
 }
 
 int64_t ModuleManifest::setFileTime(const std::string& filePath, long long timestamp) {
+    if (!FileUtils::getInstance()->isFileExist(filePath)) {
+        return 0;
+    }
     struct stat attr;
     
     stat(filePath.c_str(), &attr);
@@ -199,12 +218,44 @@ std::unordered_map<std::string, ModuleManifest::AssetDiff> ModuleManifest::genDi
         valueA = it->second;
         
         if (valueA.compressed) {
+            int64_t maxExistTime = 0;
+            int64_t maxNoFileTime = 0;
+            
             for (auto bit : valueA.content) {
                 auto fLen = getFileLen(FileUtils::getInstance()->getWritablePath() + bit.second.path);
-                if (fLen != bit.second.len) {
-                    CCLOG("ModuleManifest::genDiff path: %s fTime: %lld bit.second.timestamp: %lld", bit.second.path.c_str(), getFileTime(FileUtils::getInstance()->getWritablePath() + bit.second.path) + 60, bit.second.timestamp);
-                    auto fTime = getFileTime(FileUtils::getInstance()->getWritablePath() + bit.second.path) + 60;
-                    if (fTime < bit.second.timestamp) {
+                if (fLen >= 0) {
+                    auto fTime = getFileTime(FileUtils::getInstance()->getWritablePath() + bit.second.path);
+                    if (fTime > maxExistTime) {
+                        maxExistTime = fTime;
+                    }
+                }
+                else {
+                    auto fTime = bit.second.timestamp;
+                    if (fTime > maxNoFileTime) {
+                        maxNoFileTime = fTime;
+                    }
+                }
+            }
+            
+            for (auto bit : valueA.content) {
+                auto fLen = getFileLen(FileUtils::getInstance()->getWritablePath() + bit.second.path);
+                if (fLen >= 0) {
+                    if (fLen != bit.second.len) {
+                        cocos2d::log("ModuleManifest::genDiff path: %s fTime: %lld bit.second.timestamp: %lld", bit.second.path.c_str(), getFileTime(FileUtils::getInstance()->getWritablePath() + bit.second.path) + 60, bit.second.timestamp);
+                        auto fTime = getFileTime(FileUtils::getInstance()->getWritablePath() + bit.second.path) + 60;
+                        if (fTime < bit.second.timestamp) {
+                            AssetDiff diff;
+                            diff.asset = valueA;
+                            diff.type = DiffType::MODIFIED;
+                            diff_map.emplace(key, diff);
+                            diffLen += valueA.len;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    cocos2d::log("ModuleManifest::genDiff path: %s file not exist bit.second.timestamp: %lld maxNoFileTime %lld maxExistTime %lld", bit.second.path.c_str(), bit.second.timestamp, maxNoFileTime, maxExistTime);
+                    if (maxNoFileTime > maxExistTime) {
                         AssetDiff diff;
                         diff.asset = valueA;
                         diff.type = DiffType::MODIFIED;
@@ -218,7 +269,7 @@ std::unordered_map<std::string, ModuleManifest::AssetDiff> ModuleManifest::genDi
         else {
             auto fLen = getFileLen(FileUtils::getInstance()->getWritablePath() + valueA.path);
             if (fLen != valueA.len) {
-                CCLOG("ModuleManifest::genDiff path: %s fTime: %lld valueA.timestamp: %lld", valueA.path.c_str(), getFileTime(FileUtils::getInstance()->getWritablePath() + valueA.path) + 60, valueA.timestamp);
+                cocos2d::log("ModuleManifest::genDiff path: %s fTime: %lld valueA.timestamp: %lld", valueA.path.c_str(), getFileTime(FileUtils::getInstance()->getWritablePath() + valueA.path) + 60, valueA.timestamp);
                 auto fTime = getFileTime(FileUtils::getInstance()->getWritablePath() + valueA.path) + 60;
                 if (fTime < valueA.timestamp) {
                     AssetDiff diff;
@@ -449,6 +500,14 @@ void ModuleManifest::loadModuleManifest(const rapidjson::Document &json)
     }
     else {
         _forceUpdate = false;
+    }
+    
+    if ( json.HasMember(KEY_FORCE_ALERT) && json[KEY_FORCE_ALERT].IsTrue() )
+    {
+        _forceAlert = true;
+    }
+    else {
+        _forceAlert = false;
     }
     
     // Retrieve package url
